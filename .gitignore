@@ -1,0 +1,17 @@
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ingnore VScode specific directories
+.vscode
+bin
+
+# Ignore Gradle build output directory
+build
+
+.idea
+.DS_Store
+
+# Certificate intermediates. The PKCS12 keystore is part of the submission.
+localhost.crt
+localhost.key
+openssl-localhost.cnf
