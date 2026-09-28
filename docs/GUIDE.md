@@ -68,7 +68,7 @@ Second lab of 2026--2027. Command line is enough; **VS Code**, **IntelliJ IDEA**
 
 - [Kotlin 2.4.0](https://kotlinlang.org/) on **Java 25 LTS**. Do not downgrade the toolchain.
 - [Gradle 9.6.0](https://gradle.org/) via the wrapper (`./gradlew`).
-- [Spring Boot 4.1.0](https://docs.spring.io/spring-boot/) (Spring Framework 7). Use `spring-boot-starter-webmvc`, not the Boot 3 name `spring-boot-starter-web`.
+- [Spring Boot 4.1.0](https://docs.spring.io/spring-boot/) (Spring Framework 7) with `spring-boot-starter-webmvc`.
 - **Thymeleaf** for the error page.
 - **OpenSSL** for the self-signed certificate.
 
@@ -121,7 +121,58 @@ When the application has no handler for a request, Spring Boot shows a default w
 
 1. Create `error.html` with your own content.
 2. Save it in `src/main/resources/templates`. Spring Boot uses this Thymeleaf template for errors when the client accepts HTML.
-3. Add a test that requests an unknown path with `Accept: text/html` and checks for your content and status `404`. Use a running server (`@SpringBootTest(webEnvironment = RANDOM_PORT)`). `MockMvc` records the `404` and an empty body; it does not render `error.html`. For that test, override `server.ssl.enabled` to `false` in `src/test/resources/application.yml` so the test does not need the keystore.
+3. Add a test that requests an unknown path with `Accept: text/html` and checks for your content and status `404`.
+
+   Use a real server. `MockMvc` records the `404` and an empty body; it does not render `error.html`. Call the server with `TestRestTemplate` and `@AutoConfigureTestRestTemplate` (`org.springframework.boot.resttestclient`, already on the test classpath).
+
+   ```kotlin
+   import org.junit.jupiter.api.Assertions.assertEquals
+   import org.junit.jupiter.api.Assertions.assertTrue
+   import org.junit.jupiter.api.Test
+   import org.springframework.beans.factory.annotation.Autowired
+   import org.springframework.boot.resttestclient.TestRestTemplate
+   import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate
+   import org.springframework.boot.test.context.SpringBootTest
+   import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
+   import org.springframework.boot.test.web.server.LocalServerPort
+   import org.springframework.http.HttpEntity
+   import org.springframework.http.HttpHeaders
+   import org.springframework.http.HttpMethod
+   import org.springframework.http.HttpStatus
+   import org.springframework.http.MediaType
+
+   @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+   @AutoConfigureTestRestTemplate
+   class ErrorPageTest {
+       @LocalServerPort
+       private var port: Int = 0
+
+       @Autowired
+       private lateinit var client: TestRestTemplate
+
+       @Test
+       fun unknownPathRendersErrorHtml() {
+           val headers = HttpHeaders()
+           headers.accept = listOf(MediaType.TEXT_HTML)
+           val response = client.exchange(
+               "http://127.0.0.1:$port/missing",
+               HttpMethod.GET,
+               HttpEntity<Void>(headers),
+               String::class.java,
+           )
+           assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+           assertTrue(response.body!!.contains("your marker"))
+       }
+   }
+   ```
+
+   After the TLS task, `src/main/resources/application.yml` turns SSL on. Tests must keep plain HTTP, or this client cannot connect and the keystore gets in the way. Add `src/test/resources/application.yml`:
+
+   ```yaml
+   server:
+     ssl:
+       enabled: false
+   ```
 
 ### 2. Add `/time`
 
@@ -171,15 +222,45 @@ Return the current server time as JSON.
    import org.springframework.web.bind.annotation.RestController
 
    @RestController
-   class TimeController(private val service: TimeProvider) {
+   class TimeController(
+       private val service: TimeProvider,
+   ) {
        @GetMapping("/time")
        fun time(): TimeDTO = service.now().toDTO()
    }
    ```
 
-7. Add a test that `GET /time` returns `200` and a JSON `time` field. Use the same Boot 4 `AutoConfigureMockMvc` as the error-page test.
+7. Add a test that `GET /time` returns `200` and a JSON `time` field. This test uses `MockMvc`. The error-page test uses `TestRestTemplate`.
 
-Jackson is auto-configured by `spring-boot-starter-webmvc`. With `tools.jackson.module:jackson-module-kotlin` on the classpath, Kotlin data classes such as `TimeDTO` serialize correctly.
+   Annotate the test with `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc` from `spring-boot-starter-webmvc-test`.
+
+   ```kotlin
+   import org.junit.jupiter.api.Test
+   import org.springframework.beans.factory.annotation.Autowired
+   import org.springframework.boot.test.context.SpringBootTest
+   import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+   import org.springframework.http.MediaType
+   import org.springframework.test.web.servlet.MockMvc
+   import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+   import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+   import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+
+   @SpringBootTest
+   @AutoConfigureMockMvc
+   class TimeControllerTest {
+       @Autowired
+       private lateinit var mockMvc: MockMvc
+
+       @Test
+       fun timeIsJson() {
+           mockMvc.perform(get("/time").accept(MediaType.APPLICATION_JSON))
+               .andExpect(status().isOk)
+               .andExpect(jsonPath("$.time").exists())
+       }
+   }
+   ```
+
+Jackson 3 is auto-configured by `spring-boot-starter-webmvc`. `tools.jackson.module:jackson-module-kotlin` is on the classpath, so `TimeDTO` serializes as JSON.
 
 Inject `TimeProvider` so a test can supply a fixed clock instead of `LocalDateTime.now()`.
 
@@ -261,16 +342,16 @@ If `curl` does not negotiate HTTP/2, check `curl -V` for `nghttp2`. Force HTTP/2
 Custom error page (expect `HTTP/2` and `404`, and your HTML):
 
 ```bash
-curl --http2 -k -H "Accept: text/html" -i https://127.0.0.1:8443/
+curl -v --http2 -k -H "Accept: text/html" -i https://127.0.0.1:8443/
 ```
 
 `/time` (expect `HTTP/2`, `200`, and a JSON body with `time`):
 
 ```bash
-curl --http2 -k -i https://127.0.0.1:8443/time
+curl -v --http2 -k -i https://127.0.0.1:8443/time
 ```
 
-`-k` ignores the missing CA. `-i` prints the status line, where you should see `HTTP/2`.
+`-v` prints the request and the TLS handshake, including `ALPN: server accepted h2`. `-k` ignores the missing CA. `-i` prints the status line, where you should see `HTTP/2`.
 
 ### Code quality
 

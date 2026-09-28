@@ -38,6 +38,8 @@ dependencies {
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.starter.webmvc.test)
+    testImplementation(libs.spring.boot.restclient)
+    testImplementation(libs.spring.boot.resttestclient)
 }
 
 tasks.withType<Test> {
