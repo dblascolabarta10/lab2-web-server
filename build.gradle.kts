@@ -25,11 +25,15 @@ kotlin {
     }
 }
 
+val mockitoAgent = configurations.create("mockitoAgent") {
+    isCanBeConsumed = false
+}
+
 dependencies {
     val springBootVersion = libs.versions.springBoot.get()
-    implementation(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
-    developmentOnly(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
-    testImplementation(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
+    val springBootBom = platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion")
+    implementation(springBootBom)
+    mockitoAgent(springBootBom)
 
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.thymeleaf)
@@ -40,10 +44,33 @@ dependencies {
     testImplementation(libs.spring.boot.starter.webmvc.test)
     testImplementation(libs.spring.boot.restclient)
     testImplementation(libs.spring.boot.resttestclient)
+    mockitoAgent("org.mockito:mockito-core") {
+        isTransitive = false
+    }
+}
+
+// Attach Mockito at JVM startup so the inline mock maker does not self-attach.
+// See https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+abstract class MockitoAgentProvider : CommandLineArgumentProvider {
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val agentJar: ConfigurableFileCollection
+
+    override fun asArguments(): Iterable<String> =
+        listOf(
+            "-javaagent:${agentJar.asPath}",
+            // The agent appends to the bootstrap classpath, which disables CDS sharing.
+            "-Xshare:off",
+        )
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    jvmArgumentProviders.add(
+        objects.newInstance<MockitoAgentProvider>().apply {
+            agentJar.from(mockitoAgent)
+        },
+    )
 }
 
 ktlint {
