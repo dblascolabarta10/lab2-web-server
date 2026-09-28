@@ -1,9 +1,5 @@
 # Lab 2 Web Server -- Project Report
 
-This note uses the same disclosure fields as the group-project **AI use (10%)** slice. Lab 2 is still **limited**: assistive GenAI only — not a full or substantial generated solution. The project will later expect agents plus `AGENTS.md` and one skill; you do **not** need those here.
-
-Do not invent a percentage of “AI vs original” lines. Empty or fake disclosure fails this lab.
-
 ## What I specified
 
 [The three tasks, and any accepted bonus, decided *before* generating or pasting code. How you would know each one works.]

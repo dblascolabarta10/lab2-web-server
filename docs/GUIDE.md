@@ -105,9 +105,9 @@ You cannot push to the course repository. If you need a remote of your own (Code
 
 Complete the three tasks below. Document them in **REPORT.md**. Kotlin: [KDoc](https://kotlinlang.org/docs/kotlin-doc.html).
 
-The starter is a blank Spring Boot application. You add the behaviour.
+The starter is blank. Add the error page, `/time`, and HTTP/2 over TLS. A page with no server behaviour does not meet the objective.
 
-The focus is the **server**: the error view, the `/time` response, and TLS with HTTP/2 on the embedded container. A static page with no server behaviour does not meet the objective.
+Each task ends with an optional step further. Record it under **Technical decisions** in **REPORT.md**. The bonus, later in this guide, is a separate proposal.
 
 ### Oral defence (all students)
 
@@ -123,7 +123,7 @@ When the application has no handler for a request, Spring Boot shows a default w
 2. Save it in `src/main/resources/templates`. Spring Boot uses this Thymeleaf template for errors when the client accepts HTML.
 3. Add a test that requests an unknown path with `Accept: text/html` and checks for your content and status `404`.
 
-   Use a real server. `MockMvc` records the `404` and an empty body; it does not render `error.html`. Call the server with `TestRestTemplate` and `@AutoConfigureTestRestTemplate` (`org.springframework.boot.resttestclient`, already on the test classpath).
+   Use a real server and `TestRestTemplate` (`org.springframework.boot.resttestclient`, already on the test classpath). `MockMvc` returns `404` with an empty body and does not render `error.html`.
 
    ```kotlin
    import org.junit.jupiter.api.Assertions.assertEquals
@@ -166,7 +166,7 @@ When the application has no handler for a request, Spring Boot shows a default w
    }
    ```
 
-   After the TLS task, `src/main/resources/application.yml` turns SSL on. Tests must keep plain HTTP, or this client cannot connect and the keystore gets in the way. Add `src/test/resources/application.yml`:
+   Tests stay on plain HTTP after you enable TLS. Add `src/test/resources/application.yml`:
 
    ```yaml
    server:
@@ -174,11 +174,11 @@ When the application has no handler for a request, Spring Boot shows a default w
        enabled: false
    ```
 
+**A step further.** Show the status and the request path on the page. Thymeleaf can read `status` and `path` from the error model Spring already provides. Assert both in the `404` test.
+
 ### 2. Add `/time`
 
-Return the current server time as JSON.
-
-`/time` is an HTTP response from this process. Designing resource APIs is Lab 3.
+Return the current server time as JSON. Resource APIs are Lab 3.
 
 1. Create `TimeComponent.kt` in `es.unizar.webeng.lab2`.
 
@@ -230,9 +230,7 @@ Return the current server time as JSON.
    }
    ```
 
-7. Add a test that `GET /time` returns `200` and a JSON `time` field. This test uses `MockMvc`. The error-page test uses `TestRestTemplate`.
-
-   Annotate the test with `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc` from `spring-boot-starter-webmvc-test`.
+7. Add a test that `GET /time` returns `200` and a JSON `time` field. Use `MockMvc` with `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc`.
 
    ```kotlin
    import org.junit.jupiter.api.Test
@@ -260,19 +258,13 @@ Return the current server time as JSON.
    }
    ```
 
-Jackson 3 is auto-configured by `spring-boot-starter-webmvc`. `tools.jackson.module:jackson-module-kotlin` is on the classpath, so `TimeDTO` serializes as JSON.
+`tools.jackson.module:jackson-module-kotlin` is already on the classpath, so `TimeDTO` serializes as JSON. Inject `TimeProvider` when a test needs a fixed clock.
 
-Inject `TimeProvider` so a test can supply a fixed clock instead of `LocalDateTime.now()`.
+**A step further.** Add a test that injects a fixed `TimeProvider` and checks an exact timestamp. Or accept a zone, for example `GET /time?zone=Europe/Madrid`, and return that clock in the JSON.
 
 ### 3. Enable HTTP/2 and TLS
 
-Turn on HTTP/2 over TLS with a self-signed certificate.
-
-This lab is **`h2`**: HTTP/2 negotiated inside TLS with ALPN, which is what browsers use. Cleartext HTTP/2 (`h2c`) is not the task.
-
-Embedded Tomcat terminates TLS inside this one process. The usual deployment from the web-server lecture puts a gateway in front of the application server and terminates TLS there. This lab is the single process, not that edge.
-
-The certificate is self-signed, so there is no CA. `curl -k` skips that missing trust. That is not the TLS trust model from the protocols lecture.
+Turn on HTTP/2 over TLS (`h2`, ALPN) with a self-signed certificate. Tomcat terminates TLS in this process. `curl -k` is required because there is no CA.
 
 1. **Write an OpenSSL config** in the project root, `openssl-localhost.cnf`:
 
@@ -327,9 +319,9 @@ The certificate is self-signed, so there is no CA. `curl -k` skips that missing 
        enabled: true
    ```
 
-   The property name is `server.ssl` because that is Spring Boot’s name. The protocol you are configuring is TLS.
+   After this file exists, `./gradlew bootRun` listens on **8443**.
 
-   After this file exists, `./gradlew bootRun` listens on **8443**, not 8080.
+**A step further.** Add `IP:127.0.0.1` next to `DNS:localhost` on the certificate, and set `server.ssl.key-alias` to the name you passed to `openssl pkcs12 -name`. `curl -v` should still show `ALPN: server accepted h2`.
 
 ### Manual verification
 
@@ -376,7 +368,7 @@ It is not extra work you add at submit time. Sequence:
 2. The **instructor accepts** — or refuses if the proposal is too large, off-scope, or late.
 3. **Only then** may that extra be done as bonus work.
 
-Examples you may propose (they are not required, and “being first” is not the bonus): another embedded server (Jetty or Undertow) with HTTP/2 still working; response compression; content negotiation on `/time`; CORS; RFC 9457 errors instead of `error.html`; OpenAPI; structured logging; profiles; an automated HTTP/2 test.
+Examples you may propose: another embedded server (Jetty or Undertow) with HTTP/2 still working; response compression; content negotiation on `/time`; CORS; RFC 9457 errors instead of `error.html`; OpenAPI; structured logging; profiles; an automated HTTP/2 test.
 
 After acceptance implement what was agreed, with tests and documentation another student could follow, then defend it in person.
 
@@ -453,10 +445,3 @@ Same fields as the project **AI use** slice. Fill them in **REPORT.md**. “I us
 | **Human-reviewed** | What you kept, edited, or rejected |
 
 If you used no AI, write **No AI assistance**.
-
-## Insights
-
-- **TLS** encrypts the connection. This lab uses a self-signed certificate so you can see `h2` without a CA. Production trust is a different problem.
-- **HTTP/2** on this server is multiplexing and HPACK header compression on one TCP connection. Server push is off in current browsers; do not treat it as a feature you are enabling.
-- **`TimeProvider`** is the seam that lets a test freeze the clock.
-- **`toDTO()`** is an extension function: new behaviour on `LocalDateTime` without a subclass.
