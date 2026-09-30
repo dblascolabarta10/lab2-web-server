@@ -3,10 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <title>Error</title>
+    <style>
+        .texto-error {
+            font-size: 2rem; /* 2 veces más grande */
+        }
+        .codigo-error {
+            font-size: 16rem; /* 16 veces más grande */
+            color: red;       /* Color rojo */
+        }
+    </style>
 </head>
 <body>
     <h1>Página de error personalizada</h1>
-    <p>Ha ocurrido un error con el código: <strong th:text="${status}">404</strong></p>
+    
+    <p class="texto-error">
+        Ha ocurrido un error con el código: 
+        <strong class="codigo-error" th:text="${status}">404</strong>
+    </p>
+    
+    <p>No se ha encontrado la ruta solicitada: <code th:text="${path}">/ruta</code></p>
+</body>
+</html><!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Error</title>
+    <style>
+        .texto-error {
+            font-size: 2rem; /* 2 veces más grande */
+        }
+        .codigo-error {
+            font-size: 16rem; /* 16 veces más grande */
+            color: red;       /* Color rojo */
+        }
+    </style>
+</head>
+<body>
+    <h1>Página de error personalizada</h1>
+    
+    <p class="texto-error">
+        Ha ocurrido un error con el código: 
+        <strong class="codigo-error" th:text="${status}">404</strong>
+    </p>
+    
     <p>No se ha encontrado la ruta solicitada: <code th:text="${path}">/ruta</code></p>
 </body>
 </html>
