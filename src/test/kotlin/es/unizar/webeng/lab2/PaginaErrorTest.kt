@@ -18,7 +18,6 @@ import org.springframework.http.MediaType
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
 class PaginaErrorTest {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -29,18 +28,19 @@ class PaginaErrorTest {
     fun unknownPathRendersErrorHtml() {
         val headers = HttpHeaders()
         headers.accept = listOf(MediaType.TEXT_HTML)
-        
-        val response = client.exchange(
-            "http://127.0.0.1:$port/missing",
-            HttpMethod.GET,
-            HttpEntity<Void>(headers),
-            String::class.java,
-        )
+
+        val response =
+            client.exchange(
+                "http://127.0.0.1:$port/missing",
+                HttpMethod.GET,
+                HttpEntity<Void>(headers),
+                String::class.java,
+            )
 
         assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
-        
+
         assertTrue(response.body!!.contains("Página de error personalizada"))
-        
+
         assertTrue(response.body!!.contains("404"))
         assertTrue(response.body!!.contains("/missing"))
     }
