@@ -61,9 +61,7 @@ For the redesigned error page, `./gradlew check` passes (5 tests, including the 
 - **Purpose:** Brainstorming the HTML design, structuring the Kotlin code for the Time component, troubleshooting OpenSSL terminal errors, finding alternatives for the `curl` HTTP/2 issue on Windows, resolving Kotlin test compilation issues (`Unresolved reference`), fixing `URL` constructor deprecation warnings, implementing the step-further stub test, and fixing ktlint formatting violations.
 - **Representative prompts:** 
   - "Como planteo la primera tarea? alguna idea?"
-  - "Unresolved reference 'web' / 'client' in TimeControllerTest.kt"
-  - "'constructor(p0: String!): URL' is deprecated."
-  - "Imports must be ordered in lexicographic order"
+  - "Los imports tienen que estar ordenados alfabeticamente"
 - **Affected files/sections:** `error.html` Thymeleaf syntax, `TimeComponent.kt` structure, `TimeControllerTest.kt` test logic, and OpenSSL terminal commands.
 - **Validation steps:** I personally executed `./gradlew check` in my terminal to run all the tests and verify the Ktlint format. I also manually verified the HTTP/2 protocol using the browser's Network tab.
 - **Citations:** Adapted OpenSSL command structures for generating and packing PKCS12 keystores.
