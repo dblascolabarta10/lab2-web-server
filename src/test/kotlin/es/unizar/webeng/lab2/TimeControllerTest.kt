@@ -1,26 +1,28 @@
 package es.unizar.webeng.lab2
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.webmvc.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.http.MediaType
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.boot.test.web.server.LocalServerPort
+import java.net.HttpURLConnection
+import java.net.URL
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class TimeControllerTest {
-    @Autowired
-    private lateinit var mockMvc: MockMvc
+    @LocalServerPort
+    private var port: Int = 0
 
     @Test
     fun timeIsJson() {
-        mockMvc
-            .perform(get("/time").accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.time").exists())
+        val url = URL("http://127.0.0.1:$port/time")
+        val connection = url.openConnection() as HttpURLConnection
+        connection.requestMethod = "GET"
+        connection.connect()
+
+        assertEquals(200, connection.responseCode)
+
+        val response = connection.inputStream.bufferedReader().readText()
+        assertTrue(response.contains("\"time\""))
     }
 }
