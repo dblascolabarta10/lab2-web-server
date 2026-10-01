@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.spring)
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.ktlint)
+    // Compiles the SCSS files under src/main/resources into CSS during processResources
+    alias(libs.plugins.freefair.sass)
 }
 
 group = "es.unizar.webeng"

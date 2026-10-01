@@ -44,4 +44,13 @@ class PaginaErrorTest {
         assertTrue(response.body!!.contains("404"))
         assertTrue(response.body!!.contains("/missing"))
     }
+
+    @Test
+    fun errorStylesheetIsCompiledFromScss() {
+        val response = client.getForEntity("http://127.0.0.1:$port/css/error.css", String::class.java)
+
+        assertEquals(HttpStatus.OK, response.statusCode)
+        // Solo existe si el plugin de Sass ha compilado error.scss durante el build
+        assertTrue(response.body!!.contains("@keyframes you-died"))
+    }
 }

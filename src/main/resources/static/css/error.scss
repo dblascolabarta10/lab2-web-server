@@ -1,0 +1,911 @@
+// =============================================================
+//  error.scss — Pantalla de error "Has muerto"
+//  Fantasía oscura inspirada en Dark Souls / Elden Ring.
+//  Gradle (io.freefair.sass-java) lo compila a error.css.
+// =============================================================
+@use "sass:math";
+@use "theme" as *;
+
+// Debe coincidir con el número de <span> que genera error.html
+$ember-count: 64;
+
+// Bocanadas de niebla (x y ancho alto) dentro de una tesela de 100vw
+$fog-back: (8% 62% 26% 50%, 34% 78% 22% 42%, 58% 66% 30% 55%, 84% 74% 24% 46%);
+$fog-front: (18% 70% 32% 60%, 50% 82% 26% 48%, 80% 68% 30% 58%);
+
+$rays-mask: radial-gradient(circle, #000 0%, rgba(0, 0, 0, 0.45) 16%, transparent 40%);
+
+$grain: svg-uri(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220">' +
+    '<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch"/>' +
+    '<feColorMatrix type="saturate" values="0"/></filter>' + '<rect width="100%" height="100%" filter="url(#n)"/></svg>'
+);
+
+// =============================================================
+//  Base
+// =============================================================
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  // Parallax (-1..1) y antorcha (px): los actualiza el script de error.html
+  --mx: 0;
+  --my: 0;
+  --px: 50vw;
+  --py: 75vh;
+  color-scheme: dark;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 40%, c("ash") 0%, transparent 70%),
+    radial-gradient(ellipse 120% 45% at 50% 105%, rgba(130, 42, 12, 0.35), transparent 70%),
+    linear-gradient(180deg, c("void") 0%, c("abyss") 60%, #140b08 100%);
+  background-color: c("void");
+  color: c("bone");
+  font-family: $font-lore;
+  -webkit-font-smoothing: antialiased;
+
+  // Telón negro: la escena despierta desde la oscuridad
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: z("curtain");
+    background: #000;
+    pointer-events: none;
+    animation: curtain-lift 2.4s $ease-dread both;
+  }
+
+  // Grano de película sobre todo
+  &::after {
+    content: "";
+    position: fixed;
+    inset: -100%;
+    z-index: z("grain");
+    background-image: $grain;
+    opacity: 0.06;
+    pointer-events: none;
+    animation: grain 0.9s steps(6) infinite;
+  }
+}
+
+// =============================================================
+//  Escenario (capas de fondo con parallax)
+// =============================================================
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: z("scene");
+  overflow: hidden;
+  pointer-events: none;
+
+  // Cada capa declara su --depth: cuanto mayor, más se mueve con el ratón
+  > * {
+    position: absolute;
+    translate: calc(var(--mx) * var(--depth, 0) * 1px) calc(var(--my) * var(--depth, 0) * 0.5px);
+  }
+
+  // Resplandor de gracia detrás del sigilo
+  &__halo {
+    --depth: 4;
+    left: 50%;
+    top: 40%;
+    width: 130vmin;
+    height: 130vmin;
+    margin: -65vmin 0 0 -65vmin;
+    background: radial-gradient(circle, c("gold", 0.2) 0%, rgba(255, 130, 50, 0.08) 32%, transparent 62%);
+    animation: halo-breathe 7s ease-in-out infinite;
+  }
+
+  // Rayos de luz girando en sentidos opuestos
+  &__rays {
+    --depth: 8;
+    left: 50%;
+    top: 40%;
+    width: 180vmax;
+    height: 180vmax;
+    margin: -90vmax 0 0 -90vmax;
+    -webkit-mask-image: $rays-mask;
+    mask-image: $rays-mask;
+    mix-blend-mode: screen;
+    animation: reveal-fade 3s ease-out cue("sigil") both;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      animation: spin 200s linear infinite;
+    }
+
+    &::before {
+      background: repeating-conic-gradient(transparent 0deg 6deg, c("gold-bright", 0.08) 8deg, transparent 10deg 17deg);
+    }
+
+    &::after {
+      background: repeating-conic-gradient(transparent 0deg 9deg, rgba(255, 150, 70, 0.06) 11deg, transparent 13deg 23deg);
+      animation-duration: 140s;
+      animation-direction: reverse;
+    }
+  }
+
+  // Ruinas de la ciudadela
+  &__castle {
+    left: -4%;
+    bottom: 0;
+    width: 108%;
+
+    .window {
+      fill: c("ember");
+      animation: window-flicker 4s linear infinite;
+    }
+
+    // Cada ventana parpadea a su ritmo
+    @for $i from 1 through 6 {
+      .window:nth-child(#{$i}) {
+        animation-duration: 2.6s + $i * 0.7s;
+        animation-delay: -$i * 0.9s;
+      }
+    }
+
+    &--far {
+      --depth: 12;
+      height: 52vh;
+      fill: #17121d;
+
+      .window {
+        fill: c("ember", 0.45);
+      }
+    }
+
+    &--near {
+      --depth: 26;
+      bottom: -1vh;
+      height: 38vh;
+      fill: #050407;
+    }
+  }
+
+  // Niebla que se arrastra entre las ruinas
+  &__fog {
+    left: 0;
+    width: 200%;
+    animation: fog-drift linear infinite;
+
+    &--back {
+      --depth: 34;
+      bottom: 10vh;
+      height: 42vh;
+      @include fog-layer($fog-back, 0.14);
+      animation-duration: 95s;
+    }
+
+    &--front {
+      --depth: 56;
+      bottom: -8vh;
+      height: 36vh;
+      @include fog-layer($fog-front, 0.2);
+      animation-duration: 60s;
+    }
+  }
+
+  // Brasas que ascienden desde la hoguera
+  &__embers {
+    --depth: 18;
+    inset: 0;
+
+    span {
+      position: absolute;
+      bottom: -12px;
+      left: var(--x);
+      width: var(--size);
+      height: var(--size);
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff4cc 0%, #ffb054 40%, rgba(255, 80, 20, 0) 72%);
+      box-shadow: 0 0 6px 1px rgba(255, 120, 40, 0.55);
+      opacity: 0;
+      animation: ember-rise var(--life) linear var(--delay) infinite;
+    }
+
+    // Posición, tamaño, ritmo y deriva aleatorios, generados por Sass en cada build
+    @for $i from 1 through $ember-count {
+      span:nth-child(#{$i}) {
+        --x: #{math.random(100)}%;
+        --size: #{1 + math.random(4)}px;
+        --life: #{6 + math.random(9)}s;
+        --delay: -#{math.random(150) * 0.1}s;
+        --drift: #{math.random(260) - 130}px;
+      }
+    }
+  }
+}
+
+// Viñeta: oscurece los bordes del escenario
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: z("veil");
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.6) 88%, rgba(0, 0, 0, 0.92) 100%);
+}
+
+// Luz de antorcha que sigue al cursor
+.torch {
+  position: fixed;
+  inset: 0;
+  z-index: z("torch");
+  pointer-events: none;
+  background: radial-gradient(circle 280px at var(--px) var(--py), rgba(255, 170, 90, 0.09), transparent 70%);
+  mix-blend-mode: screen;
+}
+
+// =============================================================
+//  Altar: el contenido
+// =============================================================
+.altar {
+  --sigil: min(52vmin, 410px);
+  position: relative;
+  z-index: z("altar");
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.6rem, 2.2vh, 1.4rem);
+  padding: clamp(1rem, 3vh, 3rem) 16px;
+  text-align: center;
+
+  @include phone {
+    --sigil: min(82vw, 44vh);
+  }
+}
+
+// --- Rótulo de zona descubierta ---
+.banner {
+  --track: 0.34em;
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin: 0;
+  font-family: $font-title;
+  font-weight: 600;
+  font-size: clamp(0.68rem, 1.5vw, 0.9rem);
+  line-height: 1.4;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: c("parchment");
+  text-shadow: 0 0 12px c("gold", 0.35);
+  @include reveal("banner", 1.6s);
+
+  &::before,
+  &::after {
+    content: "";
+    flex: none;
+    height: 1px;
+    width: clamp(28px, 10vw, 140px);
+    animation: line-grow 1.8s $ease-soul cue("banner") both;
+  }
+
+  &::before {
+    background: linear-gradient(90deg, transparent, c("gold"));
+    transform-origin: right;
+  }
+
+  &::after {
+    // compensa el letter-spacing de la última letra
+    margin-left: calc(var(--track) * -1);
+    background: linear-gradient(270deg, transparent, c("gold"));
+    transform-origin: left;
+  }
+
+  @include phone {
+    --track: 0.16em;
+    gap: 0.5rem;
+    font-size: 0.62rem;
+
+    &::before,
+    &::after {
+      width: clamp(14px, 5vw, 40px);
+    }
+  }
+}
+
+// --- Sigilo con el código de estado ---
+.sigil {
+  position: relative;
+  width: var(--sigil);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  container-type: inline-size;
+  translate: calc(var(--mx) * -10px) calc(var(--my) * -6px);
+
+  &__ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 0 4px c("gold", 0.7)) drop-shadow(0 0 16px rgba(255, 150, 60, 0.35));
+    animation: reveal-fade 2.4s ease-out cue("sigil") both;
+  }
+
+  .ring-line {
+    fill: none;
+  }
+
+  .ring-text {
+    fill: c("gold", 0.85);
+    font: 600 12px $font-title;
+    transform-origin: 200px 200px;
+    animation: spin 160s linear infinite;
+  }
+
+  .ring-ticks {
+    transform-origin: 200px 200px;
+    animation: spin 90s linear infinite reverse;
+  }
+
+  // Los trazos del sigilo se dibujan solos, uno tras otro, y luego laten
+  .sigil-draw {
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation:
+      draw 3.2s $ease-dread cue("sigil") forwards,
+      sigil-glow 4.5s ease-in-out cue("sigil") + 3.6s infinite;
+  }
+
+  @for $i from 1 through 6 {
+    .sigil-draw:nth-child(#{$i}) {
+      animation-delay: cue("sigil") + ($i - 1) * 0.22s, cue("sigil") + 3.6s;
+    }
+  }
+
+  &__core {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: core-forge 2.6s $ease-soul cue("core") both;
+
+    // Calor que late detrás del código
+    &::before {
+      content: "";
+      position: absolute;
+      inset: -25% -15%;
+      z-index: -1;
+      background: radial-gradient(closest-side, rgba(200, 30, 10, 0.4), transparent);
+      animation: heat 3.4s ease-in-out infinite;
+    }
+  }
+
+  &__code {
+    display: block;
+    font-family: $font-display;
+    font-weight: 900;
+    font-size: clamp(4.5rem, 15vmin, 8rem);
+    font-size: 29cqi;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    padding-left: 0.02em;
+    // Metal fundido: el degradado se desplaza lentamente dentro de las letras
+    background: linear-gradient(180deg, #fff1c9 0%, #ffb067 16%, #e2461c 38%, c("blood") 62%, #3d0404 100%);
+    background-size: 100% 220%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 22px rgba(214, 40, 16, 0.55));
+    animation: molten 5s ease-in-out infinite alternate;
+  }
+
+  &__omen {
+    margin-top: 0.5em;
+    font: 600 clamp(0.6rem, 3.3cqi, 0.9rem) $font-title;
+    letter-spacing: 0.42em;
+    padding-left: 0.42em;
+    text-transform: uppercase;
+    color: c("gold");
+    text-shadow: 0 0 10px c("gold", 0.5);
+  }
+}
+
+// --- Franja "Has muerto" ---
+.death-band {
+  position: relative;
+  align-self: stretch;
+  margin: calc(var(--sigil) * -0.2) -16px 0;
+  padding: clamp(0.9rem, 2.6vh, 1.6rem) 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.82) 24%, rgba(0, 0, 0, 0.82) 76%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  animation: reveal-fade 1.8s ease-out cue("band") both;
+
+  &__title {
+    margin: 0;
+    font-family: $font-title;
+    font-weight: 400;
+    font-size: clamp(2rem, min(7vw, 9vh), 5rem);
+    line-height: 1.1;
+    letter-spacing: 0.16em;
+    padding-left: 0.16em;
+    text-transform: uppercase;
+    color: c("blood");
+    text-shadow:
+      0 0 18px rgba(170, 20, 12, 0.55),
+      0 0 2px rgba(0, 0, 0, 0.9);
+    animation: you-died 6.5s cubic-bezier(0.15, 0.55, 0.25, 1) cue("died") both;
+  }
+}
+
+// --- Mensaje grabado en el suelo ---
+.message {
+  position: relative;
+  width: 100%;
+  max-width: 40rem;
+  padding: 1.1rem clamp(1rem, 4vw, 2.6rem) 1.2rem;
+  background:
+    radial-gradient(ellipse at 50% 0%, c("soapstone", 0.08), transparent 70%),
+    rgba(8, 7, 11, 0.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  // Los laterales se funden con la oscuridad (solo afecta al relleno)
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  @include reveal("message", 1.6s);
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    height: 1px;
+    @include hairline;
+  }
+
+  &::before {
+    top: 0;
+  }
+
+  &::after {
+    bottom: 0;
+  }
+
+  &__label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    margin: 0 0 0.5rem;
+    font: 600 0.7rem $font-title;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: c("soapstone");
+    text-shadow: 0 0 10px c("soapstone", 0.6);
+
+    &::before,
+    &::after {
+      content: "";
+      @include gem(5px, c("soapstone"));
+    }
+  }
+
+  &__lore {
+    margin: 0;
+    font-family: $font-lore;
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+    line-height: 1.5;
+    color: c("parchment");
+  }
+
+  // La ruta solicitada, como el brillo de un fantasma
+  &__path {
+    display: inline-block;
+    max-width: 100%;
+    margin: 0.55rem 0;
+    padding: 0.3em 1.2em;
+    font: 600 clamp(1.1rem, 2.6vw, 1.45rem) $font-lore;
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
+    color: #e4f3ff;
+    background: linear-gradient(90deg, transparent, c("phantom", 0.12), transparent);
+    animation: phantom 3.6s ease-in-out infinite;
+  }
+}
+
+// --- Botón: descansar en la hoguera ---
+.rest {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.75rem 1.6rem 0.75rem 1.2rem;
+  font: 600 0.78rem $font-title;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: c("bone");
+  border: 1px solid c("gold", 0.35);
+  background: linear-gradient(180deg, rgba(30, 24, 20, 0.75), rgba(8, 7, 10, 0.85));
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.8);
+  transition:
+    color 0.4s,
+    border-color 0.4s,
+    box-shadow 0.4s;
+  @include reveal("rest", 1.4s);
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    margin-top: -3.5px;
+    @include gem(7px);
+  }
+
+  &::before {
+    left: -4px;
+  }
+
+  &::after {
+    right: -4px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    color: c("gold-bright");
+    border-color: c("gold", 0.85);
+    box-shadow:
+      inset 0 0 18px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(255, 150, 60, 0.35);
+
+    .rest__fire {
+      scale: 1.3;
+    }
+  }
+
+  &:focus-visible {
+    outline: 1px solid c("gold-bright");
+    outline-offset: 5px;
+  }
+
+  @include phone {
+    gap: 0.7rem;
+    padding-inline: 1rem 1.2rem;
+    letter-spacing: 0.16em;
+  }
+
+  // Hoguera en miniatura con la espada enroscada
+  &__fire {
+    position: relative;
+    flex: none;
+    width: 18px;
+    height: 24px;
+    transition: scale 0.4s $ease-soul;
+
+    &::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      z-index: 1;
+      width: 2px;
+      height: 24px;
+      margin-left: -1px;
+      background: linear-gradient(#e2e5ec, #5d6170);
+    }
+
+    i {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      border-radius: 50% 0 50% 50%;
+      rotate: -45deg;
+      animation: flame-lick 0.9s ease-in-out infinite;
+
+      &:nth-child(1) {
+        width: 16px;
+        height: 16px;
+        margin-left: -8px;
+        background: linear-gradient(225deg, #ff5a1f, #8a1a06);
+      }
+
+      &:nth-child(2) {
+        width: 11px;
+        height: 11px;
+        margin-left: -5.5px;
+        background: linear-gradient(225deg, #ffb347, #ff6a1f);
+        animation-duration: 0.7s;
+        animation-delay: -0.3s;
+      }
+
+      &:nth-child(3) {
+        z-index: 2;
+        width: 6px;
+        height: 6px;
+        margin-left: -3px;
+        background: #fff1c2;
+        animation-duration: 0.5s;
+        animation-delay: -0.2s;
+      }
+    }
+  }
+}
+
+// =============================================================
+//  Ajustes por tamaño de pantalla y preferencias
+// =============================================================
+@include short-screen {
+  .altar {
+    --sigil: min(44vmin, 360px);
+    gap: clamp(0.5rem, 1.6vh, 1rem);
+  }
+
+  .message {
+    padding-block: 0.8rem;
+  }
+}
+
+@include calm {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  .scene__embers,
+  body::after {
+    display: none;
+  }
+}
+
+// =============================================================
+//  Animaciones
+// =============================================================
+@keyframes curtain-lift {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes reveal-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes line-grow {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes sigil-glow {
+  50% {
+    stroke-opacity: 0.45;
+  }
+}
+
+@keyframes core-forge {
+  0% {
+    opacity: 0;
+    transform: scale(1.3);
+    filter: blur(16px) brightness(2.5);
+  }
+  55% {
+    opacity: 1;
+    filter: blur(0) brightness(1.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0) brightness(1);
+  }
+}
+
+@keyframes molten {
+  from {
+    background-position: 50% 0%;
+  }
+  to {
+    background-position: 50% 100%;
+  }
+}
+
+@keyframes heat {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes halo-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes fog-drift {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes window-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  12% {
+    opacity: 0.35;
+  }
+  14% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  52% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes ember-rise {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  8% {
+    opacity: 1;
+  }
+  35% {
+    transform: translate3d(calc(var(--drift) * 0.25 + 18px), -36vh, 0) scale(0.9);
+  }
+  70% {
+    opacity: 0.85;
+    transform: translate3d(calc(var(--drift) * 0.7 - 14px), -72vh, 0) scale(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), -108vh, 0) scale(0.35);
+  }
+}
+
+// La animación clásica: el texto aparece y crece muy despacio
+@keyframes you-died {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+    letter-spacing: 0.08em;
+    padding-left: 0.08em;
+    filter: blur(4px);
+  }
+  35% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.04);
+    letter-spacing: 0.2em;
+    padding-left: 0.2em;
+  }
+}
+
+@keyframes phantom {
+  0%,
+  100% {
+    text-shadow:
+      0 0 6px c("phantom", 0.8),
+      0 0 18px c("phantom", 0.35);
+  }
+  50% {
+    text-shadow:
+      0 0 10px c("phantom"),
+      0 0 30px c("phantom", 0.6);
+  }
+}
+
+@keyframes flame-lick {
+  0%,
+  100% {
+    scale: 1;
+    translate: 0 0;
+  }
+  33% {
+    scale: 1.12;
+    translate: 0.5px -1px;
+  }
+  66% {
+    scale: 0.92;
+    translate: -0.5px 0;
+  }
+}
+
+@keyframes grain {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-4%, 3%);
+  }
+  40% {
+    transform: translate(3%, -5%);
+  }
+  60% {
+    transform: translate(-6%, -2%);
+  }
+  80% {
+    transform: translate(5%, 4%);
+  }
+  100% {
+    transform: translate(-2%, 6%);
+  }
+}

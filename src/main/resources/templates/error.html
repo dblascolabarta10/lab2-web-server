@@ -1,25 +1,165 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Error</title>
-    <style>
-        .texto-error {
-            font-size: 2rem; /* 2 veces más grande */
-        }
-        .codigo-error {
-            font-size: 16rem; /* 16 veces más grande */
-            color: red;       /* Color rojo */
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#050407">
+    <title th:text="|${status} · Has muerto|">404 · Has muerto</title>
+    <!-- Cinzel (inscripciones), Cinzel Decorative (código) y Cormorant Garamond (textos de lore) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cinzel+Decorative:wght@900&family=Cormorant+Garamond:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+    <!-- Compilada desde static/css/error.scss durante el build de Gradle -->
+    <link rel="stylesheet" href="/css/error.css" th:href="@{/css/error.css}">
 </head>
 <body>
-    <h1>Página de error personalizada</h1>
-    
-    <p class="texto-error">
-        Ha ocurrido un error con el código: 
-        <strong class="codigo-error" th:text="${status}">404</strong>
-    </p>
-    
-    <p>No se ha encontrado la ruta solicitada: <code th:text="${path}">/ruta</code></p>
+    <!-- Escenario decorativo: halo, rayos de gracia, ruinas, niebla y brasas -->
+    <div class="scene" aria-hidden="true">
+        <div class="scene__halo"></div>
+        <div class="scene__rays"></div>
+
+        <svg class="scene__castle scene__castle--far" viewBox="0 0 1600 420" preserveAspectRatio="xMidYMax slice">
+            <path d="M0 420V300H30V262H44L56 196L68 262H82V240H102V282H140V212H150L166 118L182 212H192V252H214V188H226L246 66L266 188H278V252H300V232L322 182L344 232V262H360V202H370L386 130L402 202H412V272H452V300H520V282H540L552 248L564 282H584V312H700V302H720L732 268L744 302H764V322H880V306H900L912 276L924 306H944V316H1040V292H1060V252H1070L1086 188L1102 252H1112V282H1150V222H1162L1180 108L1198 222H1210V242H1240V172H1252L1276 48L1300 172H1312V242H1332V212H1344L1360 140L1376 212H1388V262H1420V232L1442 190L1464 232V272H1500V252H1512L1526 200L1540 252H1552V292H1600V420Z"/>
+            <g class="windows">
+                <rect class="window" x="240" y="204" width="4" height="9"/>
+                <rect class="window" x="250" y="222" width="4" height="9"/>
+                <rect class="window" x="1270" y="192" width="4" height="10"/>
+                <rect class="window" x="1282" y="210" width="4" height="9"/>
+                <rect class="window" x="1176" y="238" width="3" height="8"/>
+                <rect class="window" x="160" y="230" width="3" height="8"/>
+            </g>
+        </svg>
+
+        <div class="scene__fog scene__fog--back"></div>
+
+        <svg class="scene__castle scene__castle--near" viewBox="0 0 1600 420" preserveAspectRatio="xMidYMax slice">
+            <path d="M0 420V252H18V236H30V252H44V236H56V252H70V172H76V160H86V172H96V160H106V172H116V160H126V172H132V292H168V318L196 300L226 334L256 318L296 344H372L420 356Q600 374 800 372T1180 356L1214 336V298H1228V236H1236L1254 164L1272 236H1280V300H1300V196H1308V184H1318V196H1328V184H1338V196H1348V184H1358V196H1364V318L1404 300L1436 330L1474 292V252H1484L1496 212L1508 252H1518V308L1560 298L1600 308V420Z"/>
+            <g class="windows">
+                <rect class="window" x="90" y="190" width="5" height="11"/>
+                <rect class="window" x="110" y="222" width="5" height="11"/>
+                <rect class="window" x="98" y="254" width="5" height="11"/>
+                <rect class="window" x="1316" y="214" width="5" height="11"/>
+                <rect class="window" x="1338" y="248" width="5" height="11"/>
+                <rect class="window" x="1251" y="252" width="4" height="10"/>
+            </g>
+        </svg>
+
+        <div class="scene__fog scene__fog--front"></div>
+
+        <!-- Brasas: el número debe coincidir con $ember-count en error.scss -->
+        <div class="scene__embers">
+            <span th:each="ember : ${#numbers.sequence(1, 64)}"></span>
+        </div>
+    </div>
+    <div class="veil" aria-hidden="true"></div>
+
+    <main class="altar">
+        <p class="banner">Página de error personalizada</p>
+
+        <div class="sigil">
+            <svg class="sigil__ring" viewBox="0 0 400 400" aria-hidden="true">
+                <defs>
+                    <linearGradient id="sigil-gold" x1="0" y1="0" x2="0" y2="400" gradientUnits="userSpaceOnUse">
+                        <stop offset="0" stop-color="#f6e3a1"/>
+                        <stop offset="0.5" stop-color="#d8b26a"/>
+                        <stop offset="1" stop-color="#8a6a2b"/>
+                    </linearGradient>
+                    <path id="sigil-text-path" d="M200 200m-174 0a174 174 0 1 1 348 0a174 174 0 1 1-348 0"/>
+                    <path id="sigil-gem" d="M200 34l6 8-6 8-6-8z"/>
+                </defs>
+
+                <!-- Anillos exteriores -->
+                <g stroke="url(#sigil-gold)">
+                    <circle class="ring-line" cx="200" cy="200" r="198" stroke-width="0.6"/>
+                    <circle class="ring-line" cx="200" cy="200" r="166" stroke-width="0.8"/>
+                    <circle class="ring-line" cx="200" cy="200" r="150" stroke-width="0.5" stroke-opacity="0.5"/>
+                </g>
+                <g class="ring-ticks" fill="url(#sigil-gold)">
+                    <circle cx="200" cy="200" r="191" fill="none" stroke="url(#sigil-gold)" stroke-width="5" stroke-dasharray="1 6" stroke-opacity="0.55"/>
+                    <use href="#sigil-gem"/>
+                    <use href="#sigil-gem" transform="rotate(90 200 200)"/>
+                    <use href="#sigil-gem" transform="rotate(180 200 200)"/>
+                    <use href="#sigil-gem" transform="rotate(270 200 200)"/>
+                </g>
+                <text class="ring-text">
+                    <textPath href="#sigil-text-path" textLength="1090" lengthAdjust="spacing">VIA AMISSA EST · NULLA GRATIA HIC MANET · CINIS AD CINEREM · LUX IN TENEBRIS PERIIT ·</textPath>
+                </text>
+
+                <!-- Sigilo central: cada trazo se dibuja solo -->
+                <g class="sigil-mark" stroke="url(#sigil-gold)">
+                    <path class="sigil-draw" pathLength="1" d="M200 82a118 118 0 1 1 0 236a118 118 0 1 1 0-236"/>
+                    <path class="sigil-draw" pathLength="1" d="M70 250A140 140 0 1 1 330 250"/>
+                    <path class="sigil-draw" pathLength="1" d="M200 74a54 54 0 1 1 0 108a54 54 0 1 1 0-108"/>
+                    <path class="sigil-draw" pathLength="1" d="M128 214A72 72 0 0 0 272 214"/>
+                    <path class="sigil-draw" pathLength="1" d="M200 36V364"/>
+                    <path class="sigil-draw" pathLength="1" d="M170 330H230"/>
+                </g>
+            </svg>
+
+            <div class="sigil__core">
+                <strong class="sigil__code" th:text="${status}">404</strong>
+                <span class="sigil__omen"
+                      th:text="${status == 404 ? 'Senda perdida' : (status == 401 or status == 403) ? 'Puerta sellada' : status >= 500 ? 'El reino ha caído' : 'Maldición desconocida'}">Senda perdida</span>
+            </div>
+        </div>
+
+        <div class="death-band">
+            <h1 class="death-band__title">Has muerto</h1>
+        </div>
+
+        <section class="message" aria-label="Mensaje del viajero">
+            <p class="message__label">Mensaje grabado en el suelo</p>
+            <p class="message__lore">El mapa antiguo no reconoce los dominios de</p>
+            <code class="message__path" th:text="${path}">/ruta</code>
+            <p class="message__lore">Retrocede, viajero, antes de que el vacío te consuma.</p>
+        </section>
+
+        <a class="rest" href="/" th:href="@{/}" data-back>
+            <span class="rest__fire" aria-hidden="true"><i></i><i></i><i></i></span>
+            Descansar en la hoguera
+        </a>
+    </main>
+
+    <div class="torch" aria-hidden="true"></div>
+
+    <script>
+        (() => {
+            const root = document.documentElement;
+            const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            let target = { x: 0, y: 0 };
+            let current = { x: 0, y: 0 };
+            let frame = 0;
+
+            // Parallax con inercia: las capas siguen al ratón suavemente
+            const tick = () => {
+                current.x += (target.x - current.x) * 0.06;
+                current.y += (target.y - current.y) * 0.06;
+                root.style.setProperty("--mx", current.x.toFixed(3));
+                root.style.setProperty("--my", current.y.toFixed(3));
+                const moving = Math.abs(target.x - current.x) + Math.abs(target.y - current.y) > 0.002;
+                frame = moving ? requestAnimationFrame(tick) : 0;
+            };
+
+            window.addEventListener("pointermove", (event) => {
+                root.style.setProperty("--px", event.clientX + "px");
+                root.style.setProperty("--py", event.clientY + "px");
+                if (calm) return;
+                target = {
+                    x: (event.clientX / window.innerWidth) * 2 - 1,
+                    y: (event.clientY / window.innerHeight) * 2 - 1,
+                };
+                if (!frame) frame = requestAnimationFrame(tick);
+            });
+
+            // Volver a la página anterior si existe; si no, el enlace lleva a la raíz
+            document.querySelector("[data-back]").addEventListener("click", (event) => {
+                if (window.history.length > 1) {
+                    event.preventDefault();
+                    window.history.back();
+                }
+            });
+        })();
+    </script>
 </body>
+</html>

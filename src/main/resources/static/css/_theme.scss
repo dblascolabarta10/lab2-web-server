@@ -1,0 +1,150 @@
+// =============================================================
+//  _theme.scss — tokens, funciones y mixins del tema "Senda Perdida"
+//  Es un parcial (empieza por "_"): no genera CSS por sí mismo,
+//  lo consume error.scss mediante @use.
+// =============================================================
+@use "sass:color";
+@use "sass:list";
+@use "sass:map";
+@use "sass:string";
+
+// ---------- Paleta ----------
+$palette: (
+  "void": #050407,
+  "abyss": #0c0a10,
+  "ash": #1c1722,
+  "bone": #ece3d0,
+  "parchment": #c4b69c,
+  "gold": #d8b26a,
+  "gold-bright": #f6e3a1,
+  "gold-deep": #8a6a2b,
+  "blood": #b51c14,
+  "ember": #ff8a3d,
+  "soapstone": #eaa24c,
+  "phantom": #7cc4ff,
+  "fog": #9ea3bb,
+);
+
+/// Devuelve un color de la paleta, opcionalmente con transparencia.
+@function c($name, $alpha: 1) {
+  @if not map.has-key($palette, $name) {
+    @error "Color desconocido en la paleta: '#{$name}'";
+  }
+  $color: map.get($palette, $name);
+  @if $alpha < 1 {
+    @return color.change($color, $alpha: $alpha);
+  }
+  @return $color;
+}
+
+// ---------- Tipografía ----------
+$font-display: "Cinzel Decorative", "Cinzel", Georgia, serif;
+$font-title: "Cinzel", "Trajan Pro", Georgia, serif;
+$font-lore: "Cormorant Garamond", Garamond, Georgia, serif;
+
+// ---------- Movimiento ----------
+$ease-soul: cubic-bezier(0.22, 0.61, 0.36, 1);
+$ease-dread: cubic-bezier(0.65, 0, 0.35, 1);
+
+// Coreografía de entrada: segundo en el que aparece cada pieza
+$cues: (
+  "banner": 0.7s,
+  "sigil": 1.1s,
+  "core": 1.6s,
+  "band": 2.5s,
+  "died": 2.7s,
+  "message": 3.6s,
+  "rest": 4.2s,
+);
+
+@function cue($step) {
+  @return map.get($cues, $step);
+}
+
+// ---------- Capas (z-index) ----------
+$layers: (
+  "scene": 0,
+  "veil": 5,
+  "altar": 10,
+  "torch": 20,
+  "grain": 30,
+  "curtain": 40,
+);
+
+@function z($layer) {
+  @return map.get($layers, $layer);
+}
+
+// ---------- Utilidades ----------
+/// Sustituye todas las apariciones de $search en $string.
+@function str-replace($string, $search, $replace: "") {
+  $index: string.index($string, $search);
+  @if $index {
+    $rest: string.slice($string, $index + string.length($search));
+    @return string.slice($string, 1, $index - 1) + $replace + str-replace($rest, $search, $replace);
+  }
+  @return $string;
+}
+
+/// Convierte un SVG en una data-URI apta para background-image.
+@function svg-uri($svg) {
+  $encoded: $svg;
+  @each $char, $code in ("%": "%25", "<": "%3C", ">": "%3E", "#": "%23", '"': "'") {
+    $encoded: str-replace($encoded, $char, $code);
+  }
+  @return url("data:image/svg+xml,#{$encoded}");
+}
+
+// ---------- Mixins ----------
+/// Entrada estándar: la pieza emerge de la niebla.
+@mixin reveal($step, $duration: 1.6s) {
+  animation: reveal $duration $ease-soul cue($step) both;
+}
+
+/// Línea fina dorada que se desvanece en los extremos.
+@mixin hairline($angle: 90deg, $alpha: 0.8) {
+  background: linear-gradient($angle, transparent, c("gold", $alpha), transparent);
+}
+
+/// Rombo decorativo (gema).
+@mixin gem($size: 7px, $color: c("gold")) {
+  width: $size;
+  height: $size;
+  background: $color;
+  box-shadow: 0 0 8px color.change($color, $alpha: 0.8);
+  rotate: 45deg;
+}
+
+/// Capa de niebla: un radial-gradient por cada bocanada (x y ancho alto).
+/// La tesela mide la mitad de la capa, así el desplazamiento del 50% es continuo.
+@mixin fog-layer($puffs, $alpha) {
+  $gradients: ();
+  @each $x, $y, $w, $h in $puffs {
+    $gradients: list.append(
+      $gradients,
+      radial-gradient(ellipse $w $h at $x $y, c("fog", $alpha), transparent 70%),
+      $separator: comma
+    );
+  }
+  background-image: $gradients;
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+}
+
+@mixin phone {
+  @media (max-width: 600px) {
+    @content;
+  }
+}
+
+@mixin short-screen {
+  @media (max-height: 820px) {
+    @content;
+  }
+}
+
+@mixin calm {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}
