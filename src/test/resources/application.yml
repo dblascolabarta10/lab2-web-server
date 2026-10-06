@@ -1,3 +1,9 @@
 server:
   ssl:
     enabled: false
+logging:
+  file:
+    name: build/logs/test-trace.log
+  structured:
+    format:
+      file: logstash

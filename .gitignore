@@ -15,3 +15,5 @@ build
 localhost.crt
 localhost.key
 openssl-localhost.cnf
+# Runtime log files
+logs/
