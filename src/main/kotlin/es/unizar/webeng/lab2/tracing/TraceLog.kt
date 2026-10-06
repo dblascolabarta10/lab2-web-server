@@ -17,8 +17,15 @@ fun Logger.traceStep(
     step: TraceStep,
     request: HttpServletRequest,
     status: Int? = null,
+) = traceStep(step, "${request.method} ${request.requestURI}", status)
+
+/** Variante para sitios sin acceso a la petición, como el controlador. */
+fun Logger.traceStep(
+    step: TraceStep,
+    detail: String,
+    status: Int? = null,
 ) {
     var event = atInfo().addKeyValue("step", step.name)
     if (status != null) event = event.addKeyValue("status", status)
-    event.log("{} {} {}", step, request.method, request.requestURI)
+    event.log("{} {}", step, detail)
 }

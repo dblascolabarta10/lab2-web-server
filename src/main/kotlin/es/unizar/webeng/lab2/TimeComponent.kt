@@ -1,5 +1,8 @@
 package es.unizar.webeng.lab2
 
+import es.unizar.webeng.lab2.tracing.TraceStep
+import es.unizar.webeng.lab2.tracing.traceStep
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
@@ -29,6 +32,12 @@ fun LocalDateTime.toDTO(): TimeDTO = TimeDTO(time = this)
 class TimeController(
     private val service: TimeProvider,
 ) {
+    private val log = LoggerFactory.getLogger(TimeController::class.java)
+
     @GetMapping("/time")
-    fun time(): TimeDTO = service.now().toDTO()
+    fun time(): TimeDTO {
+        // Punto central de la traza: aquí llega la petición
+        log.traceStep(TraceStep.HANDLER, "TimeController.time")
+        return service.now().toDTO()
+    }
 }
