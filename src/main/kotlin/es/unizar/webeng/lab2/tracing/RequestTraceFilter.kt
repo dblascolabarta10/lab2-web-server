@@ -7,10 +7,13 @@ import jakarta.servlet.ServletResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
+import java.util.UUID
 
 /**
  * Filtro servlet puro: es lo primero que ve la petición al entrar al contenedor
- * y lo último al salir. Registra [TraceStep.FILTER_IN] y [TraceStep.FILTER_OUT].
+ * y lo último al salir. Crea el id de traza y registra
+ * [TraceStep.FILTER_IN] y [TraceStep.FILTER_OUT].
  */
 class RequestTraceFilter : Filter {
     private val log = LoggerFactory.getLogger(RequestTraceFilter::class.java)
@@ -21,23 +24,16 @@ class RequestTraceFilter : Filter {
         chain: FilterChain,
     ) {
         val http = request as HttpServletRequest
-        trace(TraceStep.FILTER_IN, http)
+        // Se crea aquí, en la capa más externa, para que todos los pasos lo lleven
+        MDC.put(TRACE_ID_KEY, UUID.randomUUID().toString())
+        log.traceStep(TraceStep.FILTER_IN, http)
         try {
             chain.doFilter(request, response)
         } finally {
             // Se registra aunque falle algo más adentro
-            trace(TraceStep.FILTER_OUT, http, (response as HttpServletResponse).status)
+            log.traceStep(TraceStep.FILTER_OUT, http, (response as HttpServletResponse).status)
+            // El hilo se reutiliza para otras peticiones: no puede quedar el id
+            MDC.remove(TRACE_ID_KEY)
         }
-    }
-
-    private fun trace(
-        step: TraceStep,
-        request: HttpServletRequest,
-        status: Int? = null,
-    ) {
-        // El paso va como campo propio del JSON para poder buscarlo en el test
-        var event = log.atInfo().addKeyValue("step", step.name)
-        if (status != null) event = event.addKeyValue("status", status)
-        event.log("{} {} {}", step, request.method, request.requestURI)
     }
 }

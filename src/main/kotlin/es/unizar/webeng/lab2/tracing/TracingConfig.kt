@@ -15,4 +15,12 @@ class TracingConfig {
             // Casi el primero de la cadena, pero deja hueco por delante
             order = Ordered.HIGHEST_PRECEDENCE + 10
         }
+
+    @Bean
+    fun onceTraceFilter(): FilterRegistrationBean<OncePerRequestTraceFilter> =
+        FilterRegistrationBean(OncePerRequestTraceFilter()).apply {
+            addUrlPatterns("/*")
+            // Justo después del filtro anterior, que es quien crea el id
+            order = Ordered.HIGHEST_PRECEDENCE + 20
+        }
 }
