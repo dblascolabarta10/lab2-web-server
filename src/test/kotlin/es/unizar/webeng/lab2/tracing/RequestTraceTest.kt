@@ -10,13 +10,17 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRe
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.test.web.server.LocalServerPort
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import tools.jackson.databind.json.JsonMapper
 import java.io.File
 
 /**
- * Hace una petición real a `/time` y comprueba en el fichero de logs JSON
- * que ha pasado por todos los pasos de la traza, en orden.
+ * Hace peticiones reales y comprueba en el fichero de logs JSON
+ * que han pasado por todos los pasos de la traza, en orden.
  */
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
@@ -44,17 +48,54 @@ class RequestTraceTest {
         // Cabecera del ResponseBodyAdvice
         assertEquals("TimeController.time", response.headers.getFirst(HANDLER_HEADER))
 
-        val steps = waitForTrace(traceId!!)
-
         // El orden del enum es el orden esperado de ejecución
-        assertEquals(TraceStep.entries.map { it.name }, steps)
+        val expected = TraceStep.entries.map { it.name }
+        assertEquals(expected, waitForTrace(traceId!!, expected.size))
     }
 
-    // FILTER_OUT puede escribirse justo después de que llegue la respuesta, así que se espera un poco
-    private fun waitForTrace(traceId: String): List<String> {
+    @Test
+    fun unknownPathTracesErrorForwardWithSameId() {
+        val headers = HttpHeaders()
+        headers.accept = listOf(MediaType.TEXT_HTML)
+        val response =
+            client.exchange(
+                "http://127.0.0.1:$port/missing",
+                HttpMethod.GET,
+                HttpEntity<Void>(headers),
+                String::class.java,
+            )
+
+        assertEquals(HttpStatus.NOT_FOUND, response.statusCode)
+        val traceId = response.headers.getFirst(TRACE_ID_HEADER)
+        assertNotNull(traceId)
+
+        // Primero la petición original, que falla sin llegar a ningún controlador.
+        // Después el reenvío a /error: el Filter se repite y el OncePerRequestFilter no.
+        val expected =
+            listOf(
+                TraceStep.FILTER_IN,
+                TraceStep.ONCE_PER_REQUEST_IN,
+                TraceStep.PRE_HANDLE,
+                TraceStep.AFTER_COMPLETION,
+                TraceStep.ONCE_PER_REQUEST_OUT,
+                TraceStep.FILTER_OUT,
+                TraceStep.FILTER_IN,
+                TraceStep.PRE_HANDLE,
+                TraceStep.POST_HANDLE,
+                TraceStep.AFTER_COMPLETION,
+                TraceStep.FILTER_OUT,
+            ).map { it.name }
+        assertEquals(expected, waitForTrace(traceId!!, expected.size))
+    }
+
+    // Los últimos pasos pueden escribirse justo después de que llegue la respuesta, así que se espera un poco
+    private fun waitForTrace(
+        traceId: String,
+        expectedSize: Int,
+    ): List<String> {
         val deadline = System.currentTimeMillis() + 5_000
         var steps = stepsOf(traceId)
-        while (steps.lastOrNull() != TraceStep.FILTER_OUT.name && System.currentTimeMillis() < deadline) {
+        while (steps.size < expectedSize && System.currentTimeMillis() < deadline) {
             Thread.sleep(50)
             steps = stepsOf(traceId)
         }

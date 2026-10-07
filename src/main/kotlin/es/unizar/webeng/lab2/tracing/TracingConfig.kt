@@ -1,5 +1,6 @@
 package es.unizar.webeng.lab2.tracing
 
+import jakarta.servlet.DispatcherType
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -14,6 +15,8 @@ class TracingConfig : WebMvcConfigurer {
     fun requestTraceFilter(): FilterRegistrationBean<RequestTraceFilter> =
         FilterRegistrationBean(RequestTraceFilter()).apply {
             addUrlPatterns("/*")
+            // También en el reenvío interno a /error, para trazar el camino de error
+            setDispatcherTypes(DispatcherType.REQUEST, DispatcherType.ERROR)
             // Casi el primero de la cadena, pero deja hueco por delante
             order = Ordered.HIGHEST_PRECEDENCE + 10
         }

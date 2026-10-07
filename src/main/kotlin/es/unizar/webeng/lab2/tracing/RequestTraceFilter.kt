@@ -24,8 +24,11 @@ class RequestTraceFilter : Filter {
         chain: FilterChain,
     ) {
         val http = request as HttpServletRequest
-        // Se crea aquí, en la capa más externa, para que todos los pasos lo lleven
-        MDC.put(TRACE_ID_KEY, UUID.randomUUID().toString())
+        // Se crea aquí, en la capa más externa, para que todos los pasos lo lleven.
+        // En el reenvío a /error la petición es la misma, así que se reutiliza su id.
+        val traceId = http.getAttribute(TRACE_ID_KEY) as String? ?: UUID.randomUUID().toString()
+        http.setAttribute(TRACE_ID_KEY, traceId)
+        MDC.put(TRACE_ID_KEY, traceId)
         log.traceStep(TraceStep.FILTER_IN, http)
         try {
             chain.doFilter(request, response)
